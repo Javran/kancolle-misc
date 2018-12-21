@@ -118,6 +118,7 @@ main = do
       hClose hOut >> hClose hErr
       exit ec
   setCurrentDirectory oldDir
-  putStrLn "Executed successfully, removing temporary directory ..."
+  -- there seems to be no way of knowing whether electron is killed or terminated normally
+  -- so let's always keep logs
+  -- putStrLn "Executed successfully, removing temporary directory ..."
   hClose hOut >> hClose hErr
-  rmtree (fromString tmpPath)
