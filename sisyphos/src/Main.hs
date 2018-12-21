@@ -1,12 +1,16 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, LambdaCase, DuplicateRecordFields, OverloadedStrings #-}
 module Main where
 
+import System.Environment
+import Data.Time
 import Options.Applicative
+import System.IO
 import System.IO.Temp (createTempDirectory)
 import System.Directory
-import Data.Time
-
-data PoiMode = Prod | Devel
+import System.Exit
+import Turtle hiding (FilePath, header, option)
+import Control.Monad.Catch
+import qualified Data.Text.IO as T
 
 data RawOption = RawOption
   { poiPath :: FilePath
@@ -32,7 +36,7 @@ pOpts = info (rawOpts <**> helper)
           <> metavar "PATH"
           <> help "electron bin path"
           )
-      <*> option auto
+      <*> option str
           (  long "mode"
           <> metavar "MODE"
           <> showDefault
@@ -44,13 +48,76 @@ getCurTimestamp :: IO String
 getCurTimestamp =
   formatTime defaultTimeLocale "%_Y%m%d%H%M%S" <$> getZonedTime
 
+data PoiConf = PoiConf
+  { poiPath :: FilePath
+  , electronPath :: FilePath
+  , hOut :: Handle
+  , hErr :: Handle
+  }
+
+runGuardedPoi :: PoiConf -> Shell (Either Line Line)
+runGuardedPoi PoiConf{..} =
+  inprocWithErr (fromString electronPath) [fromString poiPath] ""
+
 main :: IO ()
 main = do
   RawOption {..} <- execParser pOpts
-  tmpDir <- getTemporaryDirectory
+  -- verification.
+  putStr "Verifying poi directory ... "
+  doesDirectoryExist poiPath >>= \case
+    True -> putStrLn "yes"
+    False -> do
+      putStrLn "no"
+      putStrLn $ "Cannot find poi directory: " ++ poiPath
+      exitFailure
+
+  putStr "Verifying electron executable ... "
+  doesFileExist electronPath >>= \case
+    True -> putStrLn "yes"
+    False -> do
+      putStrLn "no"
+      putStrLn $ "Cannot find electron executable: " ++ electronPath
+      exitFailure
+  -- setup environment
+  modeStr <- case poiModeRaw of
+    "prod" -> pure "production"
+    "devel" -> pure "development"
+    raw -> do
+      putStrLn $ "Found invalid mode: \"" ++ raw ++ "\", fallback to production mode"
+      pure "production"
+  setEnv "NODE_ENV" modeStr
+
+
+  sysTmpDir <- getTemporaryDirectory
   ts <- getCurTimestamp
-  tmpPath <- createTempDirectory tmpDir ("sisyphos-" <> ts)
-  
-  putStrLn $ "Temp Path created at: " <> tmpPath
-  -- TODO
-  pure ()
+  -- directory pattern: sisyphos-<timestamp>-<random>
+  tmpPath <- createTempDirectory sysTmpDir ("sisyphos-" <> ts)
+  -- we'll run poi in tmp dir
+  oldDir <- getCurrentDirectory
+  setCurrentDirectory tmpPath
+  putStrLn $ "Temporary path created at: " <> tmpPath
+  let outFile = tmpPath ++ "/stdout"
+      errFile = tmpPath ++ "/stderr"
+  hOut <- openFile outFile WriteMode
+  hErr <- openFile errFile WriteMode
+  hSetBuffering hOut LineBuffering
+  hSetBuffering hErr LineBuffering
+  let progFold :: FoldM IO (Either Line Line) ()
+      progFold = FoldM step initial extract
+        where
+          step _ out = case out of
+            Left errOut ->
+              T.hPutStrLn hErr (lineToText errOut)
+            Right stdOut ->
+              T.hPutStrLn hOut (lineToText stdOut)
+          initial = pure ()
+          extract _ = pure ()
+  catch (foldIO (runGuardedPoi (PoiConf {..})) progFold) $ \ec@(ExitFailure _) -> do
+      putStrLn $ "poi failed with exitcode: " ++ show ec
+      putStrLn "Temporary directory is kept for investigation."
+      hClose hOut >> hClose hErr
+      exit ec
+  setCurrentDirectory oldDir
+  putStrLn "Executed successfully, removing temporary directory ..."
+  hClose hOut >> hClose hErr
+  rmtree (fromString tmpPath)
