@@ -62,6 +62,16 @@ runGuardedPoi PoiConf{..} =
 main :: IO ()
 main = do
   RawOption {..} <- execParser pOpts
+  -- finding anything prevents further execution
+  let psFold = Fold (\acc i -> acc ++ [i]) [] id
+  -- check existing instances ...
+  [ec] <- fold (fst <$> shellStrict "pgrep 'electron'" "") psFold
+  case ec of
+    ExitFailure _ -> pure ()
+    ExitSuccess -> do
+      -- TODO: this is quick & dirty
+      putStrLn "found electron running, exiting ..."
+      exitFailure
   -- verification.
   putStr "Verifying poi directory ... "
   doesDirectoryExist poiPath >>= \case
