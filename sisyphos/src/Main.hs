@@ -97,6 +97,8 @@ main = do
       pure "production"
   setEnv "NODE_ENV" modeStr
 
+  setEnv "ELECTRON_ENABLE_LOGGING" "true"
+  setEnv "ELECTRON_ENABLE_STACK_DUMPING" "true"
 
   sysTmpDir <- getTemporaryDirectory
   ts <- getCurTimestamp
