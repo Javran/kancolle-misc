@@ -1,19 +1,23 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Main (main) where
 
+import Control.Concurrent.Async
+import Control.Monad
+import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.Char
+import Data.Either
 import qualified Data.IntMap.Strict as IM
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import Data.List
-import Data.Char
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Text.ParserCombinators.ReadP
-import Control.Monad
-import Data.Aeson
-import Control.Concurrent.Async
+import Control.DeepSeq
+import Control.Exception
 
 serverInfoP :: ReadP (Int, String)
 serverInfoP =
@@ -53,6 +57,17 @@ serverAddrToIp raw = case readP_to_S ipP raw of
       eof
       pure [a,b,c,d]
 
+checkNetwork :: IO Bool
+checkNetwork =
+    catch checkGoogle (\(_ :: SomeException) -> pure False)
+  where
+    checkGoogle =  do
+      mgr <- newManager tlsManagerSettings
+      req <- parseUrlThrow "http://www.google.com/"
+      resp <- httpNoBody req mgr
+      let hdrs = responseHeaders resp
+      pure $! hdrs `deepseq` True
+
 main :: IO ()
 main = do
   mgr <- newManager tlsManagerSettings
@@ -64,11 +79,18 @@ main = do
         let resourceUri = "http://" <> ipAddr <> "/kcs2/version.json"
         raw <- simpleReq resourceUri
         pure (decode' raw)
+  -- TODO: we'll actually encounter connection issue here while
+  -- for WhaleChan this step is performed on another thread
   x <- T.unpack . decodeUtf8 . BSL.toStrict
     <$> simpleReq "http://203.104.209.7/gadget_html5/js/kcs_const.js"
   let sMaps = IM.map serverAddrToIp $ parseServerInfo x
   -- xs <- mapConcurrently _ sMaps
   asyncTasks <- IM.elems <$> mapM (async . fetchVersionData) sMaps
-  xs <- mapConcurrently waitCatch asyncTasks
-  print xs
-  pure ()
+  (errs, results) <- partitionEithers <$> mapConcurrently waitCatch asyncTasks
+  if null results
+    then do
+      n <- checkNetwork
+      putStrLn $ "Network connection: " <> show n
+    else
+      print (let (a:as) = results in all (==a) as)
+  mapM_ print errs

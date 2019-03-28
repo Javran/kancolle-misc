@@ -20,6 +20,7 @@ dependencies:
 - containers
 - aeson
 - async
+- deepseq
 
 executables:
   sst:
