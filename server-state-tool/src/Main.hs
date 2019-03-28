@@ -61,11 +61,11 @@ main = do
       fetchVersionData :: String -> IO (Maybe (M.Map String String))
       fetchVersionData ipAddr = do
         let resourceUri = "http://" <> ipAddr <> "/kcs2/version.json"
-        raw <- simpleReq  resourceUri
+        raw <- simpleReq resourceUri
         pure (decode' raw)
   x <- T.unpack . decodeUtf8 . BSL.toStrict
     <$> simpleReq "http://203.104.209.7/gadget_html5/js/kcs_const.js"
   let sMaps = IM.map serverAddrToIp $ parseServerInfo x
-  forM_ sMaps $ \ip ->
-    fetchVersionData ip >>= print
+  (a:as) <- IM.elems <$> mapM fetchVersionData sMaps
+  print (all (==a) as)
   pure ()
