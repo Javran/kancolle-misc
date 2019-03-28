@@ -13,6 +13,7 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Text.ParserCombinators.ReadP
 import Control.Monad
 import Data.Aeson
+import Control.Concurrent.Async
 
 serverInfoP :: ReadP (Int, String)
 serverInfoP =
@@ -66,6 +67,8 @@ main = do
   x <- T.unpack . decodeUtf8 . BSL.toStrict
     <$> simpleReq "http://203.104.209.7/gadget_html5/js/kcs_const.js"
   let sMaps = IM.map serverAddrToIp $ parseServerInfo x
-  (a:as) <- IM.elems <$> mapM fetchVersionData sMaps
-  print (all (==a) as)
+  -- xs <- mapConcurrently _ sMaps
+  asyncTasks <- IM.elems <$> mapM (async . fetchVersionData) sMaps
+  xs <- mapConcurrently waitCatch asyncTasks
+  print xs
   pure ()

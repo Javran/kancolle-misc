@@ -19,6 +19,7 @@ dependencies:
 - bytestring
 - containers
 - aeson
+- async
 
 executables:
   sst:
