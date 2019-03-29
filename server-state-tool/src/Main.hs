@@ -70,23 +70,53 @@ checkNetwork =
       let hdrs = responseHeaders resp
       pure $! hdrs `deepseq` True
 
+-- getServerMaps :: Manager -> IO (IM.Map String String)
+simpleReq :: Manager -> String -> IO BSL.ByteString
+simpleReq mgr url = do
+  req <- parseUrlThrow url
+  responseBody <$> httpLbs req mgr
+
+getServerMaps :: Manager -> IO (IM.IntMap String)
+getServerMaps mgr =
+    -- we'd like to return a value even if the network fails
+    catch getMapsFromServer (\(_ :: SomeException) -> pure defMap)
+  where
+    defMap = IM.fromList
+      [ (1, "203.104.209.71")
+      , (2, "203.104.209.87")
+      , (3, "125.6.184.215")
+      , (4, "203.104.209.183")
+      , (5, "203.104.209.150")
+      , (6, "203.104.209.134")
+      , (7, "203.104.209.167")
+      , (8, "203.104.209.199")
+      , (9, "125.6.189.7")
+      , (10, "125.6.189.39")
+      , (11, "125.6.189.71")
+      , (12, "125.6.189.103")
+      , (13, "125.6.189.135")
+      , (14, "125.6.189.167")
+      , (15, "125.6.189.215")
+      , (16, "125.6.189.247")
+      , (17, "203.104.209.23")
+      , (18, "203.104.209.39")
+      , (19, "203.104.209.55")
+      , (20, "203.104.209.102")
+      ]
+
+    getMapsFromServer =
+      IM.map serverAddrToIp . parseServerInfo . T.unpack . decodeUtf8 . BSL.toStrict
+        <$> simpleReq mgr "http://203.104.209.7/gadget_html5/js/kcs_const.js"
+
 main :: IO ()
 main = do
   mgr <- newManager tlsManagerSettings
-  let simpleReq url = do
-        req <- parseUrlThrow url
-        responseBody <$> httpLbs req mgr
-      fetchVersionData :: String -> IO (Maybe (M.Map String String))
+  let fetchVersionData :: String -> IO (Maybe (M.Map String String))
       fetchVersionData ipAddr = do
         let resourceUri = "http://" <> ipAddr <> "/kcs2/version.json"
-        raw <- simpleReq resourceUri
+        raw <- simpleReq mgr resourceUri
         pure (decode' raw)
-  -- TODO: we'll actually encounter connection issue here while
-  -- for WhaleChan this step is performed on another thread
-  x <- T.unpack . decodeUtf8 . BSL.toStrict
-    <$> simpleReq "http://203.104.209.7/gadget_html5/js/kcs_const.js"
-  let sMaps = IM.map serverAddrToIp $ parseServerInfo x
-  -- xs <- mapConcurrently _ sMaps
+  sMaps <- getServerMaps mgr
   asyncTasks <- IM.elems <$> mapM (async . fetchVersionData) sMaps
   (errs, results) <- partitionEithers <$> mapConcurrently waitCatch asyncTasks
   if null results
