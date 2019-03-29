@@ -57,13 +57,15 @@ serverAddrToIp raw = case readP_to_S ipP raw of
       eof
       pure [a,b,c,d]
 
+-- | check network connection
 checkNetwork :: IO Bool
 checkNetwork =
     catch checkGoogle (\(_ :: SomeException) -> pure False)
   where
     checkGoogle =  do
+      -- one shot manager. in case there are caching related behaviors
       mgr <- newManager tlsManagerSettings
-      req <- parseUrlThrow "http://www.google.com/"
+      req <- parseUrlThrow "http://www.google.com/generate_204"
       resp <- httpNoBody req mgr
       let hdrs = responseHeaders resp
       pure $! hdrs `deepseq` True
