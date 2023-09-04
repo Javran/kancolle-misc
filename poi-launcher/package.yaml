@@ -1,4 +1,4 @@
-name: sisyphos
+name: poi-launcher
 version: "0.0.0"
 
 dependencies:
@@ -57,7 +57,7 @@ default-extensions:
   - TypeSynonymInstances
 
 executables:
-  sisyphos:
+  poi-launcher:
     source-dirs: src
     main: Main.hs
     ghc-options:

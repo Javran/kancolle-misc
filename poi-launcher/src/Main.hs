@@ -27,7 +27,7 @@ pOpts =
   info
     (rawOpts <**> helper)
     ( fullDesc
-        <> header "sisyphos: a poi launcher"
+        <> header "a poi launcher"
     )
   where
     rawOpts :: Parser RawOption
@@ -110,8 +110,8 @@ main = do
 
   sysTmpDir <- getTemporaryDirectory
   ts <- getCurTimestamp
-  -- directory pattern: sisyphos-<timestamp>-<random>
-  tmpPath <- createTempDirectory sysTmpDir ("sisyphos-" <> ts)
+  -- directory pattern: poi-launcher-<timestamp>-<random>
+  tmpPath <- createTempDirectory sysTmpDir ("poi-launcher-" <> ts)
   -- we'll run poi in tmp dir
   oldDir <- getCurrentDirectory
   setCurrentDirectory tmpPath
