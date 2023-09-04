@@ -1,16 +1,20 @@
-{-# LANGUAGE RecordWildCards, LambdaCase, DuplicateRecordFields, OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+
 module Main where
 
-import System.Environment
-import Data.Time
-import Options.Applicative
-import System.IO
-import System.IO.Temp (createTempDirectory)
-import System.Directory
-import System.Exit
-import Turtle hiding (FilePath, header, option)
 import Control.Monad.Catch
 import qualified Data.Text.IO as T
+import Data.Time
+import Options.Applicative
+import System.Directory
+import System.Environment
+import System.Exit
+import System.IO
+import System.IO.Temp (createTempDirectory)
+import Turtle hiding (FilePath, header, option)
 
 data RawOption = RawOption
   { poiPath :: FilePath
@@ -19,29 +23,33 @@ data RawOption = RawOption
   }
 
 pOpts :: ParserInfo RawOption
-pOpts = info (rawOpts <**> helper)
-    (  fullDesc
-    <> header "sisyphos: a poi launcher"
+pOpts =
+  info
+    (rawOpts <**> helper)
+    ( fullDesc
+        <> header "sisyphos: a poi launcher"
     )
   where
     rawOpts :: Parser RawOption
-    rawOpts = RawOption
-      <$> strOption
-          (  long "poi-path"
-          <> metavar "PATH"
-          <> help "poi app path"
+    rawOpts =
+      RawOption
+        <$> strOption
+          ( long "poi-path"
+              <> metavar "PATH"
+              <> help "poi app path"
           )
-      <*> strOption
-          (  long "electron-path"
-          <> metavar "PATH"
-          <> help "electron bin path"
+        <*> strOption
+          ( long "electron-path"
+              <> metavar "PATH"
+              <> help "electron bin path"
           )
-      <*> option str
-          (  long "mode"
-          <> metavar "MODE"
-          <> showDefault
-          <> value "prod"
-          <> help "poi launch mode, must be either \"prod\" or \"devel\""
+        <*> option
+          str
+          ( long "mode"
+              <> metavar "MODE"
+              <> showDefault
+              <> value "prod"
+              <> help "poi launch mode, must be either \"prod\" or \"devel\""
           )
 
 getCurTimestamp :: IO String
@@ -56,7 +64,7 @@ data PoiConf = PoiConf
   }
 
 runGuardedPoi :: PoiConf -> Shell (Either Line Line)
-runGuardedPoi PoiConf{..} =
+runGuardedPoi PoiConf {..} =
   inprocWithErr (fromString electronPath) [fromString poiPath] ""
 
 main :: IO ()
@@ -125,10 +133,10 @@ main = do
           initial = pure ()
           extract _ = pure ()
   catch (foldIO (runGuardedPoi (PoiConf {..})) progFold) $ \ec@(ExitFailure _) -> do
-      putStrLn $ "poi failed with exitcode: " ++ show ec
-      putStrLn "Temporary directory is kept for investigation."
-      hClose hOut >> hClose hErr
-      exit ec
+    putStrLn $ "poi failed with exitcode: " ++ show ec
+    putStrLn "Temporary directory is kept for investigation."
+    hClose hOut >> hClose hErr
+    exit ec
   setCurrentDirectory oldDir
   -- there seems to be no way of knowing whether electron is killed or terminated normally
   -- so let's always keep logs

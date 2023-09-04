@@ -1,0 +1,67 @@
+name: sisyphos
+version: "0.0.0"
+
+dependencies:
+- base
+- containers
+- optparse-applicative
+- temporary
+- directory
+- time
+- turtle
+- exceptions
+- text
+
+ghc-options:
+  - -Wall
+  - -Wno-incomplete-uni-patterns
+
+default-extensions:
+  - BangPatterns
+  - BinaryLiterals
+  - BlockArguments
+  - ConstraintKinds
+  - DataKinds
+  - DefaultSignatures
+  - DeriveDataTypeable
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveGeneric
+  - DeriveTraversable
+  - DerivingVia
+  - EmptyCase
+  - EmptyDataDecls
+  - ExistentialQuantification
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - InstanceSigs
+  - KindSignatures
+  - LambdaCase
+  - MultiParamTypeClasses
+  - MultiWayIf
+  - NamedFieldPuns
+  - NoUnicodeSyntax
+  - NumericUnderscores
+  - OverloadedStrings
+  - PartialTypeSignatures
+  - PolyKinds
+  - RankNTypes
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
+  - TypeSynonymInstances
+
+executables:
+  sisyphos:
+    source-dirs: src
+    main: Main.hs
+    ghc-options:
+      - -threaded
+      - -O2
+      - -rtsopts
+      - -with-rtsopts=-N
