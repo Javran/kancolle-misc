@@ -16,6 +16,36 @@ import System.IO
 import System.IO.Temp (createTempDirectory)
 import Turtle hiding (FilePath, header, option)
 
+{-
+  A poi launcher with some random customization.
+
+  List of things implemented:
+
+  - launch poi from a fresh directory every lifecycle,
+    with stdout and stderr piped to files in case of crash.
+
+  - prevent multiple instances from running.
+
+  - switch between prod and devel version.
+    (the future plan is to somehow compile and run from there automatically,
+    but I don't need that feature for anything yet).
+
+  TODO:
+
+  - for now the tmp directory structure is a bit messy, want a few improvements
+    on this front:
+
+    + contain everything in /tmp/poi-launcher-{user}/
+      (if possible set this to 700 mod)
+
+    + create directory based on local time rather than a messy timestamp
+
+    + let's enforce that time by second is good enough - if a directory
+      by that name already exist, refuse to continue rather than trying to
+      ensure uniqueness by some complicated approach.
+
+ -}
+
 data RawOption = RawOption
   { poiPath :: FilePath
   , electronPath :: FilePath
