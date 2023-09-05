@@ -12,7 +12,7 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Main
+      PoiLauncher.Dir
       PoiLauncher.Main
   other-modules:
       Paths_poi_launcher
@@ -63,6 +63,7 @@ library
     , containers
     , directory
     , exceptions
+    , filepath
     , optparse-applicative
     , temporary
     , text

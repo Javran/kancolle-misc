@@ -9,6 +9,7 @@ import Control.Monad.Catch
 import qualified Data.Text.IO as T
 import Data.Time
 import Options.Applicative
+import PoiLauncher.Dir
 import System.Directory
 import System.Environment
 import System.Exit
@@ -104,8 +105,7 @@ main =
     _ -> mainRun
 
 mainForDev :: [String] -> IO ()
-mainForDev _args = do
-  pure ()
+mainForDev _args = experiment
 
 mainRun :: IO ()
 mainRun = do

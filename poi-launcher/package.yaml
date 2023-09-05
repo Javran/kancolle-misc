@@ -54,6 +54,7 @@ library:
     - containers
     - directory
     - exceptions
+    - filepath
     - optparse-applicative
     - temporary
     - text
