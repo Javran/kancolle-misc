@@ -98,7 +98,17 @@ runGuardedPoi PoiConf {..} =
   inprocWithErr (fromString electronPath) [fromString poiPath] ""
 
 main :: IO ()
-main = do
+main =
+  getArgs >>= \case
+    "_dev" : args -> mainForDev args
+    _ -> mainRun
+
+mainForDev :: [String] -> IO ()
+mainForDev _args = do
+  pure ()
+
+mainRun :: IO ()
+mainRun = do
   RawOption {..} <- execParser pOpts
   -- finding anything prevents further execution
   let psFold = Fold (\acc i -> acc ++ [i]) [] id
