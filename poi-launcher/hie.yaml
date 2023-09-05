@@ -1,4 +1,6 @@
 cradle:
   stack:
     - path: "./src"
+      component: "poi-launcher:lib"
+    - path: "./exe"
       component: "poi-launcher:exe:poi-launcher"

@@ -3,14 +3,6 @@ version: "0.0.0"
 
 dependencies:
 - base
-- containers
-- optparse-applicative
-- temporary
-- directory
-- time
-- turtle
-- exceptions
-- text
 
 ghc-options:
   - -Wall
@@ -56,10 +48,25 @@ default-extensions:
   - TypeFamilies
   - TypeSynonymInstances
 
+library:
+  source-dirs: src
+  dependencies:
+    - containers
+    - directory
+    - exceptions
+    - optparse-applicative
+    - temporary
+    - text
+    - time
+    - turtle
+    - unix
+
 executables:
   poi-launcher:
-    source-dirs: src
+    source-dirs: exe
     main: Main.hs
+    dependencies:
+      - poi-launcher
     ghc-options:
       - -threaded
       - -O2
