@@ -9,12 +9,11 @@ import Control.Monad.Catch
 import qualified Data.Text.IO as T
 import Data.Time
 import Options.Applicative
-import PoiLauncher.Dir
+import PoiLauncher.Dir (ensureWorkingDir)
 import System.Directory
 import System.Environment
 import System.Exit
 import System.IO
-import System.IO.Temp (createTempDirectory)
 import Turtle hiding (FilePath, header, option)
 
 {-
@@ -105,7 +104,7 @@ main =
     _ -> mainRun
 
 mainForDev :: [String] -> IO ()
-mainForDev _args = experiment
+mainForDev _args = pure ()
 
 mainRun :: IO ()
 mainRun = do
@@ -148,10 +147,8 @@ mainRun = do
   setEnv "ELECTRON_ENABLE_LOGGING" "true"
   setEnv "ELECTRON_ENABLE_STACK_DUMPING" "true"
 
-  sysTmpDir <- getTemporaryDirectory
-  ts <- getCurTimestamp
-  -- directory pattern: poi-launcher-<timestamp>-<random>
-  tmpPath <- createTempDirectory sysTmpDir ("poi-launcher-" <> ts)
+  tmpPath <- ensureWorkingDir
+
   -- we'll run poi in tmp dir
   oldDir <- getCurrentDirectory
   setCurrentDirectory tmpPath

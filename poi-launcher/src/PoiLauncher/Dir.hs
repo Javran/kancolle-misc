@@ -1,5 +1,5 @@
 module PoiLauncher.Dir
-  ( experiment
+  ( ensureWorkingDir
   )
 where
 
@@ -60,8 +60,8 @@ ensureContainerDir = do
     setFileMode cDir expectedMode
   pure cDir
 
-ensureWorkingDir :: FilePath -> IO FilePath
-ensureWorkingDir cDir = do
+ensureWorkingDirAux :: FilePath -> IO FilePath
+ensureWorkingDirAux cDir = do
   zt <- getZonedTime
   let dName = formatTime defaultTimeLocale "%0Y%m%d_%H%M%S" zt
       dir = cDir </> dName
@@ -70,7 +70,5 @@ ensureWorkingDir cDir = do
     error $ "Directory already exist: " <> dir
   dir <$ createDirectory dir
 
-experiment :: IO ()
-experiment = do
-  z <- ensureContainerDir >>= ensureWorkingDir
-  print z
+ensureWorkingDir :: IO FilePath
+ensureWorkingDir = ensureContainerDir >>= ensureWorkingDirAux
