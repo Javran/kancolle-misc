@@ -112,13 +112,17 @@ mainRun = do
   -- finding anything prevents further execution
   let psFold = Fold (\acc i -> acc ++ [i]) [] id
   -- check existing instances ...
-  [ec0] <- Turtle.fold (fst <$> shellStrict "pgrep 'electron'" "") psFold
-  case ec0 of
-    ExitFailure _ -> pure ()
-    ExitSuccess -> do
-      -- TODO: this is quick & dirty
-      putStrLn "found electron running, exiting ..."
-      exitFailure
+  do
+    [ec] <- Turtle.fold (fst <$> shellStrict "pgrep 'electron'" "") psFold
+    case ec of
+      ExitFailure _ -> pure ()
+      ExitSuccess -> do
+        {-
+          TODO: for now we just detect if anything electron is running,
+          we probably can try to recognize by a whitelist of paths.
+         -}
+        putStrLn "found electron running, exiting ..."
+        exitFailure
   -- verification.
   putStr "Verifying poi directory ... "
   doesDirectoryExist poiPath >>= \case
@@ -169,11 +173,11 @@ mainRun = do
               T.hPutStrLn hOut (lineToText stdOut)
           initial = pure ()
           extract _ = pure ()
-  catch (foldIO (runGuardedPoi (PoiConf {..})) progFold) $ \ec1@(ExitFailure _) -> do
-    putStrLn $ "poi failed with exitcode: " ++ show ec1
+  catch (foldIO (runGuardedPoi (PoiConf {..})) progFold) $ \ec@(ExitFailure _) -> do
+    putStrLn $ "poi failed with exitcode: " ++ show ec
     putStrLn "Temporary directory is kept for investigation."
     hClose hOut >> hClose hErr
-    exit ec1
+    exit ec
   setCurrentDirectory oldDir
   -- there seems to be no way of knowing whether electron is killed or terminated normally
   -- so let's always keep logs
