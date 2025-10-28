@@ -1,0 +1,15 @@
+{
+  "name": "kcs-const-parser",
+  "type": "module",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "safe-eval": "^0.4.1"
+  }
+}
