@@ -16,6 +16,7 @@ import System.Directory
   , getTemporaryDirectory
   )
 import System.FilePath.Posix ((</>))
+import System.IO
 import System.IO.Error (catchIOError)
 import System.Posix.Files
   ( createSymbolicLink
@@ -23,7 +24,6 @@ import System.Posix.Files
   , fileMode
   , getFileStatus
   , removeLink
-  , setFileMode
   )
 import System.Posix.User (getLoginName)
 
@@ -55,12 +55,30 @@ ensureContainerDir :: IO FilePath
 ensureContainerDir = do
   t <- getTemporaryDirectory
   u <- getLoginName
-  let cDir = t </> "poi-launcher-" <> u
-  createDirectoryIfMissing False cDir
-  st <- getFileStatus cDir
+  let
+    userDir = t </> u
+    cDir = userDir </> "poi-launcher"
+  e <- doesDirectoryExist userDir
+  unless e do
+    error $
+      unlines
+        [ "Container directory " <> userDir <> " does not exist."
+        , "Please create it with appropriate permissions,"
+        , "or check your tmpfiles configuration."
+        ]
+  st <- getFileStatus userDir
   let expectedMode = directoryMode + 0o700
   unless (fileMode st == expectedMode) do
-    setFileMode cDir expectedMode
+    hPutStrLn stderr $
+      unwords
+        [ "Warning:"
+        , userDir
+        , "has mode"
+        , show (fileMode st)
+        , "but expected"
+        , show expectedMode
+        ]
+  createDirectoryIfMissing False cDir
   pure cDir
 
 ensureWorkingDirAux :: FilePath -> IO FilePath
