@@ -16,10 +16,13 @@ import System.Directory
   , getTemporaryDirectory
   )
 import System.FilePath.Posix ((</>))
+import System.IO.Error (catchIOError)
 import System.Posix.Files
-  ( directoryMode
+  ( createSymbolicLink
+  , directoryMode
   , fileMode
   , getFileStatus
+  , removeLink
   , setFileMode
   )
 import System.Posix.User (getLoginName)
@@ -63,12 +66,20 @@ ensureContainerDir = do
 ensureWorkingDirAux :: FilePath -> IO FilePath
 ensureWorkingDirAux cDir = do
   zt <- getZonedTime
-  let dName = formatTime defaultTimeLocale "%0Y%m%d_%H%M%S" zt
-      dir = cDir </> dName
+  let
+    dName = formatTime defaultTimeLocale "%0Y%m%d_%H%M%S" zt
+    dir = cDir </> dName
+    linkPath = cDir </> "latest"
   e <- doesDirectoryExist dir
   when e do
     error $ "Directory already exist: " <> dir
-  dir <$ createDirectory dir
+  createDirectory dir
+
+  -- create a "latest" link
+  catchIOError (removeLink linkPath) (\_ -> pure ())
+  createSymbolicLink dName linkPath
+
+  pure dir
 
 ensureWorkingDir :: IO FilePath
 ensureWorkingDir = ensureContainerDir >>= ensureWorkingDirAux
